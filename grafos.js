@@ -66,20 +66,16 @@ function getNumberTripsWithMaxStops(townsGraph, startingTown, endingTown, maxSto
   if (Object.keys(townsGraph).length) {
     let processedTownsAfterBFS = [];
 
+    let queue = new Queue();
+
     for (let town in townsGraph[startingTown]) {
-      processedTownsAfterBFS.push({
+      queue.push({
         stops: 1,
         currentTown: town
       });
     }
 
-    if (processedTownsAfterBFS.length) {
-      let queue = new Queue();
-
-      processedTownsAfterBFS.forEach(town => {
-        queue.enqueue(town);
-      });
-
+    if (queue.items.length) {
       while (!queue.isEmpty()) {
         for (const newTown in townsGraph[queue.firstItem.currentTown]) {
           queue.firstItem.stops++;
