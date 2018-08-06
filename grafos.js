@@ -1,5 +1,9 @@
 class TrainsProblem {
-  static _lowestCostNode(costs, processed) {
+  constructor(townsGraph) {
+    this.townsGraph = townsGraph;
+  }
+
+  static _lowestCostNodeDijkstra(costs, processed) {
     return Object.keys(costs).reduce((lowest, node) => {
       if (lowest === null || costs[node] < costs[lowest]) {
         if (!processed.includes(node)) {
@@ -24,7 +28,7 @@ class TrainsProblem {
     // track nodes that have already been processed
     const processed = [];
 
-    let node = this._lowestCostNode(costs, processed);
+    let node = this._lowestCostNodeDijkstra(costs, processed);
 
     while (node) {
       let cost = costs[node];
@@ -41,7 +45,7 @@ class TrainsProblem {
         }
       }
       processed.push(node);
-      node = this._lowestCostNode(costs, processed);
+      node = this._lowestCostNodeDijkstra(costs, processed);
     }
 
     let optimalPath = ['finish'];
@@ -87,7 +91,6 @@ class TrainsProblem {
     return this._dijkstra(graphTownsProblem).distance;
   }
 }
-
 
 const townsGraph = {
   A: { B: 5, D: 5, E: 7 },
