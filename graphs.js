@@ -1,8 +1,4 @@
 class TrainsProblem {
-  constructor(townsGraph) {
-    this.townsGraph = townsGraph;
-  }
-
   static _lowestCostNodeDijkstra(costs, processed) {
     return Object.keys(costs).reduce((lowest, node) => {
       if (lowest === null || costs[node] < costs[lowest]) {
