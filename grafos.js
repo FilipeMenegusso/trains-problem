@@ -1,3 +1,5 @@
+console.log('teste');
+
 class Queue {
   constructor() {
     this.items = [];
