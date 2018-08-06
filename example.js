@@ -1,11 +1,31 @@
+// const problem = {
+//     start: { A: 5, B: 2 },
+//     A: { C: 4, D: 2 },
+//     B: { A: 8, D: 7 },
+//     C: { D: 6, finish: 3 },
+//     D: { finish: 1 },
+//     finish: {}
+// };
+
+// const townsGraph = {
+//     A: { B: 5, D: 5, E: 7 },
+//     B: { C: 4 },
+//     C: { D: 8, E: 2 },
+//     D: { C: 8, E: 6 },
+//     E: { B: 3 }
+//   };
+
+
 const problem = {
-    start: { A: 5, B: 2 },
-    A: { C: 4, D: 2 },
-    B: { A: 8, D: 7 },
-    C: { D: 6, finish: 3 },
-    D: { finish: 1 },
-    finish: {}
+    start: { D: 8, E: 2 },
+    A: { B: 5, D: 5, E: 7 },
+    B: { C: 4 },
+    C: { finish: 0 },
+    // C: { D: 8, E: 2 },
+    D: { C: 8, E: 6 },
+    E: { B: 3 }
 };
+
 
 const lowestCostNode = (costs, processed) => {
     return Object.keys(costs).reduce((lowest, node) => {
