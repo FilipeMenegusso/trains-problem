@@ -2,7 +2,6 @@
 
 class GraphUtils {
   constructor() {
-    // public methods
     this.getTotalDistanceBetween2Towns = (townsGraph, towns) => {
       let result = null;
 
@@ -11,7 +10,7 @@ class GraphUtils {
         let nextTown = towns[index + 1]
 
         if (!townsGraph[currentTown][nextTown]) {
-          return 'NO SUCH ROUTE';
+          return null;
         }
 
         result += townsGraph[currentTown][nextTown];
@@ -20,11 +19,21 @@ class GraphUtils {
       return result;
     };
 
+    this.getShortestRoute = (startingTown, endingTown, townsGraph) => {
+      let graphTownsProblem = Object.assign({}, townsGraph)
+      graphTownsProblem.start = townsGraph[startingTown];
+      delete graphTownsProblem[startingTown];
+      delete graphTownsProblem[endingTown];
+      graphTownsProblem[endingTown] = { finish: 0 };
+
+      return self._dijkstra(graphTownsProblem).distance;
+    }
+
     this.getTotalTripsWithMaximumStops = (startingTown, endingTown, maximumStops, townsGraph) => {
       let routes = [];
 
-      for (let stops = maximumStops; stops <= maximumStops + 1; stops++) {
-        const combinationOfRoutes = self._getCombinationsOfTownRoutes(Object.keys(townsGraph), stops, '')
+      for (let stops = 1; stops < maximumStops + 1; stops++) {
+        const combinationOfRoutes = self._getCombinationsOfTownRoutes(Object.keys(townsGraph), stops, startingTown)
           .filter(town => town.startsWith(startingTown) && town.endsWith(endingTown));
 
         routes = routes.concat(combinationOfRoutes);
@@ -41,17 +50,29 @@ class GraphUtils {
       return validRoutes.length;
     };
 
-    this.getTotalTripsWithMaximumStops2 = (startingTown, endingTown, maximumStops, townsGraph) => {
+    this.getTotalTripsWithMaximumDistance = (startingTown, endingTown, distance, townsGraph) => {
       let routes = [];
 
-      self._getCombinationsOfTownRoutes2(townsGraph, Object.keys(townsGraph), routes, maximumStops, '');
+      for (let stops = 1; stops < distance + 1; stops++) {
+        const combinationOfRoutes = self._getCombinationsOfTownRoutesDistance(townsGraph, Object.keys(townsGraph), distance, startingTown)
+          .filter(town => town.startsWith(startingTown) && town.endsWith(endingTown));
 
+        routes = routes.concat(combinationOfRoutes);
+      }
 
-      return routes.filter(town => town.startsWith(startingTown) && town.endsWith(endingTown)).length;
+      let validRoutes = [];
+
+      for (const route in routes) {
+        if (self._checkRouteValidity(townsGraph, routes[route])) {
+          validRoutes.push(routes[route]);
+        }
+      }
+
+      return validRoutes;
     };
 
     this.getTotalTripsWithExactlyStops = (startingTown, endingTown, stops, townsGraph) => {
-      const routes = self._getCombinationsOfTownRoutes(Object.keys(townsGraph), stops + 1, '')
+      const routes = self._getCombinationsOfTownRoutes(Object.keys(townsGraph), stops, '')
         .filter(town => town.startsWith(startingTown) && town.endsWith(endingTown));
       let validRoutes = [];
 
@@ -64,22 +85,9 @@ class GraphUtils {
       return validRoutes.length;
     };
 
-    this.getShortestRoute = (startingTown, endingTown, townsGraph) => {
-      let graphTownsProblem = Object.assign({}, townsGraph)
-      graphTownsProblem.start = townsGraph[startingTown];
-      delete graphTownsProblem[startingTown];
-      delete graphTownsProblem[endingTown];
-      graphTownsProblem[endingTown] = { finish: 0 };
-
-      return self._dijkstra(graphTownsProblem).distance;
-    }
-
-    this.teste = [];
-
     self = this;
   }
 
-  // private methods
   _lowestCostNodeDijkstra(costs, processed) {
     return Object.keys(costs).reduce((lowest, node) => {
       if (lowest === null || costs[node] < costs[lowest]) {
@@ -140,54 +148,38 @@ class GraphUtils {
     return lowestRoute;
   };
 
-  _getCombinationsOfTownRoutes(townsGraph, routeLength, currentRoute) {
-    if (currentRoute.length == routeLength) return [currentRoute];
+  _getCombinationsOfTownRoutes(towns, routeLength, currentRoute) {
+    if (currentRoute.length > routeLength) return [currentRoute];
 
     var newRoute = [];
 
-    for (var i = 0; i < townsGraph.length; i++) {
-      newRoute.push.apply(newRoute, this._getCombinationsOfTownRoutes(townsGraph, routeLength, currentRoute + townsGraph[i]));
+    for (var i = 0; i < towns.length; i++) {
+      newRoute.push.apply(newRoute, this._getCombinationsOfTownRoutes(towns, routeLength, currentRoute + towns[i]));
     }
 
     return newRoute;
   };
 
-  _getCombinationsOfTownRoutes2(townsGraph, towns, routesResult, routeLength, currentRoute) {
-    if (currentRoute.length > 1 && this._checkRouteValidity(townsGraph, currentRoute.split('')) && currentRoute.length <= routeLength + 2) {
-      routesResult.push(currentRoute);
-    };
+  _getCombinationsOfTownRoutesDistance(townsGraph, towns, maximumDistance, currentRoute) {
+    // if (currentRoute.length >= 2) {
+    //   if (!this._checkRouteValidity(townsGraph, currentRoute)) {
+    //     const nextTown = towns.findIndex(town => town === currentRoute.split('')[currentRoute.length - 1]) + 1;
+    //     return [currentRoute.split('')[currentRoute.length - 1] + towns[nextTown]];
+    //   }
+    // }
 
-    if (currentRoute.length > routeLength + 2) {
+    const distance = this.getTotalDistanceBetween2Towns(townsGraph, currentRoute.split(''));
+
+
+    if (distance && distance < maximumDistance) {
       return [currentRoute];
-    };
-
-    var newRoute = [];
-
-    for (var i = 0; i < towns.length; i++) {
-      if (this._checkRouteValidity(townsGraph, currentRoute + towns[i]) && this.getTotalDistanceBetween2Towns(townsGraph, currentRoute.split('')) <= routeLength) {
-
-        newRoute.push.apply(newRoute, this._getCombinationsOfTownRoutes2(townsGraph, towns, routesResult, routeLength, currentRoute + towns[i]));
-      }
     }
 
-    // return newRoute;
-  };
-
-
-  _getAllCombinationsOfTownRoutes(townsGraph, towns, routeLength, currentRoute) {
-    if (currentRoute.length > 1 && this._checkRouteValidity(townsGraph, currentRoute.split('')) && this.getTotalDistanceBetween2Towns(townsGraph, currentRoute.split('')) < routeLength) {
-      this.teste.push(currentRoute);
-    };
-
-    if (currentRoute.length !== 0 && this._checkRouteValidity(townsGraph, currentRoute.split('')) && this.getTotalDistanceBetween2Towns(townsGraph, currentRoute.split('')) > routeLength) {
-      return [currentRoute]
-    };
-
     var newRoute = [];
 
     for (var i = 0; i < towns.length; i++) {
-      if (this._checkRouteValidity(townsGraph, currentRoute + towns[i]) && this.getTotalDistanceBetween2Towns(townsGraph, currentRoute.split('')) <= routeLength) {
-        newRoute.push.apply(newRoute, this._getAllCombinationsOfTownRoutes(townsGraph, towns, routeLength, currentRoute + towns[i]));
+      if (this._checkRouteValidity(townsGraph, currentRoute + towns[i]) && this.getTotalDistanceBetween2Towns(townsGraph, currentRoute + towns[i])) {
+        newRoute.push.apply(newRoute, this._getCombinationsOfTownRoutesDistance(townsGraph, towns, maximumDistance, currentRoute + towns[i]));
       }
     }
 
@@ -218,50 +210,54 @@ const townsGraph = {
 
 var graphUtils = new GraphUtils();
 
-console.log('1. The distance of the route A-B-C.');
-console.log(`Output #1: ${graphUtils.getTotalDistanceBetween2Towns(townsGraph, ['A', 'B', 'C'])}`);
-console.log('\n');
+// console.log('1. The distance of the route A-B-C.');
+// console.log(`Output #1: ${graphUtils.getTotalDistanceBetween2Towns(townsGraph, ['A', 'B', 'C'])}`);
+// console.log('\n');
 
-console.log('2. The distance of the route A-D.');
-console.log(`Output #2: ${graphUtils.getTotalDistanceBetween2Towns(townsGraph, ['A', 'D'])}`);
-console.log('\n');
+// console.log('2. The distance of the route A-D.');
+// console.log(`Output #2: ${graphUtils.getTotalDistanceBetween2Towns(townsGraph, ['A', 'D'])}`);
+// console.log('\n');
 
-console.log('3. The distance of the route A-D-C.');
-console.log(`Output #2: ${graphUtils.getTotalDistanceBetween2Towns(townsGraph, ['A', 'D', 'C'])}`);
-console.log('\n');
+// console.log('3. The distance of the route A-D-C.');
+// console.log(`Output #2: ${graphUtils.getTotalDistanceBetween2Towns(townsGraph, ['A', 'D', 'C'])}`);
+// console.log('\n');
 
-console.log('4. The distance of the route A-E-B-C-D.');
-console.log(`Output #4: ${graphUtils.getTotalDistanceBetween2Towns(townsGraph, ['A', 'E', 'B', 'C', 'D'])}`);
-console.log('\n');
+// console.log('4. The distance of the route A-E-B-C-D.');
+// console.log(`Output #4: ${graphUtils.getTotalDistanceBetween2Towns(townsGraph, ['A', 'E', 'B', 'C', 'D'])}`);
+// console.log('\n');
 
-console.log('5. The distance of the route A-E-D.');
-console.log(`Output #5: ${graphUtils.getTotalDistanceBetween2Towns(townsGraph, ['A', 'E', 'D'])}`);
-console.log('\n');
+// console.log('5. The distance of the route A-E-D.');
+// console.log(`Output #5: ${graphUtils.getTotalDistanceBetween2Towns(townsGraph, ['A', 'E', 'D'])}`);
+// console.log('\n');
 
-console.log(`6. The number of trips starting at C and ending at C with a maximum of 3 stops. In the sample data below, there are two such trips: C-D-C (2 stops). and C-E-B-C (3 stops).`);
-console.log(`Output #6: ${graphUtils.getTotalTripsWithMaximumStops('C', 'C', 3, townsGraph)}`);
-console.log('\n');
+// console.log(`6. The number of trips starting at C and ending at C with a maximum of 3 stops. In the sample data below, there are two such trips: C-D-C (2 stops). and C-E-B-C (3 stops).`);
+// console.log(`Output #6: ${graphUtils.getTotalTripsWithMaximumStops('C', 'C', 3, townsGraph)}`);
+// console.log('\n');
 
-console.log(`6. The number of trips starting at C and ending at C with a maximum of 3 stops. In the sample data below, there are two such trips: C-D-C (2 stops). and C-E-B-C (3 stops).`);
-console.log(`Output #6: ${graphUtils.getTotalTripsWithMaximumStops2('C', 'C', 3, townsGraph)}`);
-console.log('\n');
+// console.log(`6. The number of trips starting at C and ending at C with a maximum of 3 stops. In the sample data below, there are two such trips: C-D-C (2 stops). and C-E-B-C (3 stops).`);
+// console.log(`Output #6: ${graphUtils.getTotalTripsWithMaximumStops2('C', 'C', 3, townsGraph)}`);
+// console.log('\n');
 
-console.log(`The number of trips starting at A and ending at C with exactly 4 stops.  In the sample data below, there are three such trips: A to C (via B,C,D); A to C (via D,C,D); and A to C (via D,E,B).`);
-console.log(`Output #6: ${graphUtils.getTotalTripsWithExactlyStops('A', 'C', 4, townsGraph)}`);
-console.log('\n');
+// console.log(`The number of trips starting at A and ending at C with exactly 4 stops.  In the sample data below, there are three such trips: A to C (via B,C,D); A to C (via D,C,D); and A to C (via D,E,B).`);
+// console.log(`Output #6: ${graphUtils.getTotalTripsWithExactlyStops('A', 'C', 4, townsGraph)}`);
+// console.log('\n');
 
-console.log(`7. The length of the shortest route (in terms of distance to travel) from A to C.`);
-console.log(`Output #7: ${graphUtils.getShortestRoute('A', 'C', townsGraph)}`);
-console.log('\n');
+// console.log(`7. The length of the shortest route (in terms of distance to travel) from A to C.`);
+// console.log(`Output #7: ${graphUtils.getShortestRoute('A', 'C', townsGraph)}`);
+// console.log('\n');
 
-console.log(`8. The length of the shortest route (in terms of distance to travel) from B to B.`);
-console.log(`Output #7: ${graphUtils.getShortestRoute('B', 'B', townsGraph)}`);
-console.log('\n');
+// console.log(`8. The length of the shortest route (in terms of distance to travel) from B to B.`);
+// console.log(`Output #7: ${graphUtils.getShortestRoute('B', 'B', townsGraph)}`);
+// console.log('\n');
 
-console.log(`9. The number of different routes from C to C with a distance of less than 30.`);
-console.log(`Output #9: ${graphUtils.getShortestRoute('B', 'B', townsGraph)}`);
-console.log('\n');
+// console.log(`9. The number of different routes from C to C with a distance of less than 30.`);
+// console.log(`Output #9: ${graphUtils.getShortestRoute('B', 'B', townsGraph)}`);
+// console.log('\n');
 
-graphUtils._getAllCombinationsOfTownRoutes(townsGraph, Object.keys(townsGraph), 30, '');
+// graphUtils._getAllCombinationsOfTownRoutes(townsGraph, Object.keys(townsGraph), 30, '');
 
-console.log(graphUtils.teste.filter(route => route.startsWith('C') && route.endsWith('C')));
+// console.log(graphUtils.teste.filter(route => route.startsWith('C') && route.endsWith('C')));
+
+
+var teste = graphUtils.getTotalTripsWithMaximumDistance('C', 'C', 30, townsGraph);
+console.log(teste);
